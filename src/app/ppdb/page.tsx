@@ -1,57 +1,48 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUserGraduate, FaCheckCircle, FaSpinner, FaCloudUploadAlt, FaFileAlt, FaTimes } from 'react-icons/fa';
+import { FaUserGraduate, FaCheckCircle, FaSpinner, FaDownload, FaFileAlt, FaFilePdf, FaCalendarAlt, FaBullhorn } from 'react-icons/fa';
 import { supabase } from '@/lib/supabase';
-import { uploadImage } from '@/lib/storage';
+import { generateFormulirPDF } from '@/lib/generateFormulirPDF';
 
 export default function PPDBPage() {
     const [formData, setFormData] = useState({
         nama: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '',
         alamat: '', nama_ortu: '', telepon: '',
     });
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [downloading, setDownloading] = useState(false);
+    const [pengumuman, setPengumuman] = useState<any[]>([]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                setError('Ukuran file maksimal 5MB!');
-                return;
-            }
-            setSelectedFile(file);
-            setError('');
+    useEffect(() => {
+        const fetchPengumuman = async () => {
+            const { data } = await supabase
+                .from('pengumuman')
+                .select('*')
+                .eq('tipe', 'PPDB')
+                .order('created_at', { ascending: false });
+            if (data) setPengumuman(data);
+        };
+        fetchPengumuman();
+    }, []);
+
+    const handleDownloadFormulir = () => {
+        setDownloading(true);
+        try {
+            generateFormulirPDF();
+        } catch {
+            setError('Gagal mengunduh formulir. Silakan coba lagi.');
         }
-    };
-
-    const removeFile = () => {
-        setSelectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        setTimeout(() => setDownloading(false), 1500);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
-
-        let dokumenUrl = '';
-
-        // Upload dokumen jika ada
-        if (selectedFile) {
-            const url = await uploadImage(selectedFile, 'ppdb-dokumen');
-            if (url) {
-                dokumenUrl = url;
-            } else {
-                setError('Gagal upload dokumen. Coba lagi.');
-                setLoading(false);
-                return;
-            }
-        }
 
         const { error: dbError } = await supabase.from('ppdb').insert({
             nama: formData.nama,
@@ -61,7 +52,6 @@ export default function PPDBPage() {
             alamat: formData.alamat,
             nama_ortu: formData.nama_ortu,
             telepon: formData.telepon,
-            dokumen: dokumenUrl,
         });
 
         if (dbError) {
@@ -92,7 +82,7 @@ export default function PPDBPage() {
                         Data pendaftaran Anda telah berhasil disimpan. Tim kami akan menghubungi Anda untuk informasi selanjutnya.
                     </p>
                     <button
-                        onClick={() => { setSuccess(false); setSelectedFile(null); setFormData({ nama: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '', alamat: '', nama_ortu: '', telepon: '' }); }}
+                        onClick={() => { setSuccess(false); setFormData({ nama: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '', alamat: '', nama_ortu: '', telepon: '' }); }}
                         className="btn-primary"
                     >
                         Daftar Lagi
@@ -117,19 +107,137 @@ export default function PPDBPage() {
                 </div>
             </section>
 
+            {/* Pengumuman Khusus PPDB */}
+            {pengumuman.length > 0 && (
+                <section className="py-8 bg-blue-50/50">
+                    <div className="container-custom max-w-3xl">
+                        <div className="space-y-4">
+                            {pengumuman.map((p) => (
+                                <motion.div 
+                                    key={p.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white border-l-4 border-blue-600 rounded-r-2xl rounded-l-md p-6 shadow-sm flex items-start gap-4"
+                                >
+                                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                                        <FaBullhorn className="text-blue-600 text-xl" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="font-bold text-slate-800 text-lg">{p.judul}</h3>
+                                            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-medium">
+                                                {new Date(p.tanggal || p.created_at).toLocaleDateString('id-ID')}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed">{p.konten}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* Info */}
             <section className="py-8 bg-white">
                 <div className="container-custom max-w-3xl">
                     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
                         <h3 className="font-bold text-blue-800 mb-3">Persyaratan Pendaftaran</h3>
                         <ul className="text-blue-700 text-sm space-y-2">
-                            <li>• Usia maksimal 18 tahun pada tanggal 1 Juli 2025</li>
                             <li>• Lulusan SMP/MTs sederajat</li>
                             <li>• Memiliki ijazah atau Surat Keterangan Lulus</li>
                             <li>• Menyertakan rapor semester 1-5</li>
                             <li>• Pas foto terbaru ukuran 3x4 (2 lembar)</li>
+                            <li>• fotocopy kartu keluarga</li>
+                            <li>• fotocopy akte kelahiran</li>
                         </ul>
                     </div>
+                </div>
+            </section>
+
+            {/* Jadwal Kegiatan */}
+            <section className="py-8 bg-slate-50 border-y border-slate-100">
+                <div className="container-custom max-w-3xl">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
+                                <FaCalendarAlt className="text-amber-600 text-2xl" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800">Jadwal Kegiatan PPDB</h2>
+                                <p className="text-slate-500 text-sm mt-1">Jadwal dapat berubah sewaktu-waktu</p>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-0">
+                            {[
+                                { title: 'Pendaftaran Online', date: '1 - 15 Juni 2025', desc: 'Pengisian formulir pendaftaran melalui website resmi sekolah.' },
+                                { title: 'Verifikasi Berkas', date: '16 - 20 Juni 2025', desc: 'Penyerahan berkas fisik dan verifikasi data oleh panitia PPDB.' },
+                                { title: 'Tes Seleksi', date: '22 Juni 2025', desc: 'Pelaksanaan tes tertulis (Matematika, IPA, IPS, Bahasa Inggris).' },
+                                { title: 'Pengumuman Hasil', date: '25 Juni 2025', desc: 'Pengumuman siswa yang diterima melalui website dan papan pengumuman.' },
+                                { title: 'Daftar Ulang', date: '26 - 30 Juni 2025', desc: 'Proses daftar ulang bagi siswa yang dinyatakan lulus seleksi.' },
+                            ].map((item, i, arr) => (
+                                <div key={i} className="flex gap-4">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-5 h-5 rounded-full bg-amber-400 border-4 border-amber-100 mt-0.5 z-10 shrink-0"></div>
+                                        {i !== arr.length - 1 && <div className="w-0.5 h-full bg-slate-200 -mt-2"></div>}
+                                    </div>
+                                    <div className={`pb-8 ${i === arr.length - 1 ? 'pb-0' : ''}`}>
+                                        <h4 className="font-bold text-slate-800 text-lg leading-tight mb-1">{item.title}</h4>
+                                        <p className="text-amber-600 font-semibold text-sm mb-2">{item.date}</p>
+                                        <p className="text-slate-600 text-sm leading-relaxed">{item.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Download Formulir */}
+            <section className="py-8 bg-white">
+                <div className="container-custom max-w-3xl">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                                <FaFilePdf className="text-emerald-600 text-2xl" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-emerald-800 mb-1">Download Formulir Pendaftaran</h3>
+                                <p className="text-emerald-700 text-sm mb-4">
+                                    Unduh formulir pendaftaran siswa baru, cetak dan isi dengan lengkap, lalu serahkan ke sekolah saat pendaftaran ulang.
+                                </p>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <button
+                                        onClick={handleDownloadFormulir}
+                                        disabled={downloading}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 text-sm"
+                                    >
+                                        {downloading ? (
+                                            <>
+                                                <FaSpinner className="animate-spin" />
+                                                Mengunduh...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaDownload />
+                                                Download Formulir (PDF)
+                                            </>
+                                        )}
+                                    </button>
+                                    <div className="flex items-center gap-2 text-xs text-emerald-600">
+                                        <FaFileAlt />
+                                        <span>Formulir Pendaftaran Siswa Baru SMA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 
@@ -142,7 +250,7 @@ export default function PPDBPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="bg-white rounded-3xl p-8 md:p-10 shadow-xl"
                     >
-                        <h2 className="text-2xl font-bold text-slate-800 mb-8">Formulir Pendaftaran</h2>
+                        <h2 className="text-2xl font-bold text-slate-800 mb-8">Formulir Pendaftaran Online</h2>
 
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">{error}</div>
@@ -187,41 +295,6 @@ export default function PPDBPage() {
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Orang Tua / Wali *</label>
                                 <input type="text" name="nama_ortu" required value={formData.nama_ortu} onChange={handleChange} placeholder="Masukkan nama orang tua/wali"
                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" />
-                            </div>
-
-                            {/* Upload Dokumen */}
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Dokumen</label>
-                                {selectedFile ? (
-                                    <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                                            <FaFileAlt className="text-blue-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-800 truncate">{selectedFile.name}</p>
-                                            <p className="text-xs text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                        </div>
-                                        <button type="button" onClick={removeFile} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors">
-                                            <FaTimes />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
-                                    >
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            className="hidden"
-                                            accept=".pdf,.jpg,.jpeg,.png"
-                                            onChange={handleFileChange}
-                                        />
-                                        <FaCloudUploadAlt className="text-3xl text-slate-300 mx-auto mb-2" />
-                                        <p className="text-slate-500 text-sm font-medium">Klik untuk pilih dokumen</p>
-                                        <p className="text-xs text-slate-400 mt-1">PDF, JPG, PNG (Max 5MB)</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
 

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FaGraduationCap, FaTachometerAlt, FaNewspaper, FaBullhorn, FaImages, FaUserGraduate, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaGraduationCap, FaTachometerAlt, FaNewspaper, FaBullhorn, FaImages, FaUserGraduate, FaSignOutAlt, FaBars, FaTimes, FaBook, FaChalkboardTeacher, FaEnvelope, FaCog } from 'react-icons/fa';
+import { supabase } from '@/lib/supabase';
 
 const sidebarLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaTachometerAlt },
@@ -11,19 +12,41 @@ const sidebarLinks = [
     { href: '/admin/pengumuman', label: 'Kelola Pengumuman', icon: FaBullhorn },
     { href: '/admin/galeri', label: 'Kelola Galeri', icon: FaImages },
     { href: '/admin/ppdb', label: 'Data PPDB', icon: FaUserGraduate },
+    { href: '/admin/program', label: 'Kelola Program', icon: FaBook },
+    { href: '/admin/guru', label: 'Data Guru', icon: FaChalkboardTeacher },
+    { href: '/admin/pesan', label: 'Pesan Masuk', icon: FaEnvelope },
+    { href: '/admin/pengaturan', label: 'Pengaturan', icon: FaCog },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [pesanCount, setPesanCount] = useState(0);
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        if (pathname === '/admin/login') return;
+        const fetchPesanCount = async () => {
+            const { data } = await supabase
+                .from('kontak')
+                .select('id');
+            
+            if (data) {
+                const readIds = JSON.parse(localStorage.getItem('read_messages') || '[]');
+                const unreadCount = data.filter(d => !readIds.includes(d.id)).length;
+                setPesanCount(unreadCount);
+            }
+        };
+
         const isLoggedIn = localStorage.getItem('admin_logged_in');
         if (!isLoggedIn) {
-            router.push('/admin/login');
+            router.push('/login');
+        } else {
+            fetchPesanCount();
         }
+
+        // Listen for custom event when a message is read
+        window.addEventListener('pesanRead', fetchPesanCount);
+        return () => window.removeEventListener('pesanRead', fetchPesanCount);
     }, [pathname, router]);
 
     if (pathname === '/admin/login') {
@@ -32,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const handleLogout = () => {
         localStorage.removeItem('admin_logged_in');
-        router.push('/admin/login');
+        router.push('/login');
     };
 
     return (
@@ -68,13 +91,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     key={link.href}
                                     href={link.href}
                                     onClick={() => setSidebarOpen(false)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
                                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
-                                    <link.icon className={`text-lg ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                                    {link.label}
+                                    <div className="flex items-center gap-3">
+                                        <link.icon className={`text-lg ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                                        {link.label}
+                                    </div>
+                                    {link.label === 'Pesan Masuk' && pesanCount > 0 && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}`}>
+                                            {pesanCount}
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}

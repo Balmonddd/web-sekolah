@@ -11,10 +11,10 @@ import GalleryGrid from '@/components/GalleryGrid';
 import { FaArrowRight, FaBullhorn, FaNewspaper, FaImages, FaSpinner } from 'react-icons/fa';
 import { Berita } from '@/types';
 import { supabase } from '@/lib/supabase';
-
 interface PengumumanItem {
   id: string;
   judul: string;
+  konten: string;
   tipe: string;
   tanggal: string;
   created_at: string;
@@ -42,17 +42,23 @@ export default function Home() {
   const [loadingGallery, setLoadingGallery] = useState(true);
 
   useEffect(() => {
-    // Fetch berita terbaru (3)
-    supabase.from('berita').select('*').order('created_at', { ascending: false }).limit(3)
-      .then(({ data }) => { if (data) setNews(data); setLoadingNews(false); });
+    const fetchData = async () => {
+      // Fetch berita terbaru (3)
+      const { data: beritaData } = await supabase.from('berita').select('*').order('created_at', { ascending: false }).limit(3);
+      if (beritaData) setNews(beritaData);
+      setLoadingNews(false);
 
-    // Fetch pengumuman terbaru (4)
-    supabase.from('pengumuman').select('*').order('created_at', { ascending: false }).limit(4)
-      .then(({ data }) => { if (data) setAnnouncements(data); setLoadingAnnouncements(false); });
+      // Fetch pengumuman terbaru (4)
+      const { data: pengumumanData } = await supabase.from('pengumuman').select('*').order('created_at', { ascending: false }).limit(4);
+      if (pengumumanData) setAnnouncements(pengumumanData);
+      setLoadingAnnouncements(false);
 
-    // Fetch galeri (8)
-    supabase.from('galeri').select('*').order('created_at', { ascending: false }).limit(8)
-      .then(({ data }) => { if (data) setGallery(data); setLoadingGallery(false); });
+      // Fetch galeri (8)
+      const { data: galeriData } = await supabase.from('galeri').select('*').order('created_at', { ascending: false }).limit(8);
+      if (galeriData) setGallery(galeriData);
+      setLoadingGallery(false);
+    };
+    fetchData();
   }, []);
 
   return (

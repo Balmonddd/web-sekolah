@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FaFlask, FaBook, FaFutbol, FaDesktop, FaMosque, FaMusic } from 'react-icons/fa';
+import { FaFlask, FaBook, FaFutbol, FaDesktop, FaMusic } from 'react-icons/fa';
 
 const facilities = [
     {
@@ -28,12 +28,7 @@ const facilities = [
         description: 'Ruang komputer dengan 40 unit PC terbaru dan koneksi internet cepat.',
         color: 'from-purple-500 to-pink-500',
     },
-    {
-        icon: FaMosque,
-        title: 'Mushola',
-        description: 'Mushola yang nyaman untuk ibadah dengan kapasitas 200 jamaah.',
-        color: 'from-cyan-500 to-blue-500',
-    },
+
     {
         icon: FaMusic,
         title: 'Ruang Seni',

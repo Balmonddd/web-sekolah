@@ -63,67 +63,7 @@ export default function ProfilPage() {
                 </div>
             </section>
 
-            {/* Visi Misi */}
-            <section className="py-20 bg-slate-50">
-                <div className="container-custom">
-                    <motion.div {...fadeInUp}>
-                        <h2 className="section-title">Visi & Misi</h2>
-                        <p className="section-subtitle">Fondasi yang mengarahkan setiap langkah kami</p>
-                    </motion.div>
 
-                    <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                        {/* Visi */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6 }}
-                            className="bg-gradient-to-br from-blue-700 to-sky-600 text-white p-8 rounded-2xl shadow-xl"
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                                    <FaEye className="text-2xl" />
-                                </div>
-                                <h3 className="text-2xl font-bold">Visi</h3>
-                            </div>
-                            <p className="text-blue-100 leading-relaxed text-lg">
-                                &ldquo;Menjadi sekolah unggulan yang menghasilkan lulusan berkarakter, berprestasi, dan berwawasan
-                                global yang siap menjadi pemimpin masa depan.&rdquo;
-                            </p>
-                        </motion.div>
-
-                        {/* Misi */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6 }}
-                            className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100"
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <FaBullseye className="text-2xl text-blue-700" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-slate-800">Misi</h3>
-                            </div>
-                            <ul className="space-y-3">
-                                {[
-                                    'Menyelenggarakan pendidikan yang berkualitas dan inovatif',
-                                    'Mengembangkan karakter siswa melalui pembiasaan nilai-nilai luhur',
-                                    'Meningkatkan kompetensi guru melalui pelatihan berkelanjutan',
-                                    'Membangun kerjasama dengan masyarakat dan dunia industri',
-                                    'Memanfaatkan teknologi dalam proses pembelajaran',
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-start gap-3 text-slate-600">
-                                        <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
 
             {/* Sambutan Kepala Sekolah */}
             <section className="py-20 bg-white">
